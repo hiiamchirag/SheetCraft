@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Excel Sheet with Merge Feature</title>
+  <style>
+    body {
+      font-family: Calibri, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+	  .cell-container {
+  position: relative;
+}
+
+.resizer {
+  position: absolute;
+  background: #aaa;
+  z-index: 10;
+}
+
+.resizer.right {
+  width: 5px;
+  height: 100%;
+  top: 0;
+  right: 0;
+  cursor: col-resize;
+}
+
+.resizer.bottom {
+  width: 100%;
+  height: 5px;
+  bottom: 0;
+  left: 0;
+  cursor: row-resize;
+}
+
+    }
+    h2 { text-align: center; }
+
+    .toolbar, .format-toolbar, .utility-bar {
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    button, input[type="text"] {
+      margin: 5px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0078d4;
+      color: white;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      background-color: white;
+      color: black;
+      border: 1px solid #ccc;
+    }
+
+    button:hover { background-color: #005fa3; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      user-select: none;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-width: 100px;
+      text-align: left;
+    }
+
+    td {
+      background-color: #fff;
+    }
+
+    td[contenteditable="true"]:focus {
+      outline: 2px solid #0078d4;
+      background-color: #e0f4ff;
+    }
+
+    .header { background-color: #e8f0fe; font-weight: bold; text-align: center; }
+
+    .selected {
+      background-color: #cce5ff !important;
+    }
+	.toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 10px 16px;
+  font-size: 14px;
+  background-color: #ffffff;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+button:hover {
+  background-color: var(--primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+#openToolbarButton {
+  margin: 20px auto;
+  padding: 10px 20px;
+  font-size: 14px;
+  background-color: var(--primary);
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  display: block;
+}
+
+
+
+button {
+  padding: 10px 16px;
+  font-size: 14px;
+  background-color: #ffffff;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+button:hover {
+  background-color: var(--primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+input[type="text"] {
+  padding: 10px;
+  font-size: 14px;
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  margin: 5px;
+}
+@media only screen and (max-width: 600px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  #sheet-container {
+    width: 100%;
+    overflow-x: scroll;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+<h2>📘 SheetCraft</h2>
+
+<div class="toolbar">
+  <button onclick="addRow()">➕ Add Row</button>
+  <button onclick="addColumn()">➕ Add Column</button>
+  <button onclick="deleteRow()">🗑️ Delete Row</button>
+  <button onclick="deleteColumn()">🗑️ Delete Column</button>
+  <button onclick="addDateColumn()">📅 Add Date Column</button>
+  <button onclick="calculateSum()">➗ Sum</button>
+</div>
+
+<div class="format-toolbar">
+  <button onclick="formatText('bold')"><b>B</b></button>
+  <button onclick="formatText('italic')"><i>I</i></button>
+  <button onclick="formatText('removeFormat')">🧹 Clear Format</button>
+  <button onclick="mergeCells()">🔗 Merge</button>
+  <button onclick="unmergeCells()">❌ Unmerge</button>
+</div>
+
+<div class="utility-bar">
+  <input type="text" id="searchInput" oninput="searchTable()" placeholder="🔍 Search...">
+  <button onclick="clearSheet()">🧽 Clear</button>
+  <button onclick="saveSheet()">💾 Save</button>
+  <button onclick="loadSheet()">📂 Load</button>
+  <button onclick="exportToPDF()">Export to PDF</button>
+
+</div>
+
+<table id="sheet">
+  <thead id="table-head"></thead>
+  <tbody></tbody>
+</table>
+<!-- jsPDF library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- jsPDF AutoTable plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
+
+ <script src="server.js"></script>
+
+</body>
+</html>
